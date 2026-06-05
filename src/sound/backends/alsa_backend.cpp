@@ -6,6 +6,9 @@
  *
  * @author vitamin.caig@gmail.com
  *
+ * @par Change Log:
+ * 2026-06-05 BCTaoTao: Simplified ALSA detection logic
+ *
  **/
 
 #include "sound/backends/alsa.h"
@@ -985,7 +988,7 @@ namespace Sound::Alsa
       : AlsaApi(std::move(api))
       , Cards(AlsaApi)
       , Devices(AlsaApi, Cards)
-      , Current(Cards.IsValid() && Devices.IsValid() ? DeviceInfo::CreateDefault(AlsaApi) : Device::Ptr())
+      , Current(DeviceInfo::CreateDefault(AlsaApi))
     {}
 
     bool IsValid() const override
@@ -1032,16 +1035,8 @@ namespace Sound
     try
     {
       auto api = Alsa::LoadDynamicApi();
-      Alsa::Dbg("Detected Alsa {}", api->snd_asoundlib_version());
-      if (Alsa::DeviceInfoIterator(api).IsValid())
-      {
-        auto factory = MakePtr<Alsa::BackendWorkerFactory>(std::move(api));
-        storage.Register(Alsa::BACKEND_ID, Alsa::BACKEND_DESCRIPTION, Alsa::CAPABILITIES, std::move(factory));
-      }
-      else
-      {
-        throw Error(THIS_LINE, translate("No suitable output devices found"));
-      }
+      auto factory = MakePtr<Alsa::BackendWorkerFactory>(std::move(api));
+      storage.Register(Alsa::BACKEND_ID, Alsa::BACKEND_DESCRIPTION, Alsa::CAPABILITIES, std::move(factory));
     }
     catch (const Error& e)
     {
